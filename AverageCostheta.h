@@ -1,12 +1,14 @@
 #ifndef COS_THETA_UTILS_H
 #define COS_THETA_UTILS_H
 #include "TFile.h"
-#include "TH2D.h"
+#include "TH1D.h"
+#include "TH2.h"
 #include <memory>
 #include <string>
 #include <iostream>
 
-inline TH2D* load2DHistogram(const std::string& filename,
+namespace AverageCostheta {
+inline TH2* load2DHistogram(const std::string& filename,
                              const std::string& histname)
 {
     std::cout << "Opening ROOT file: " << filename << std::endl;
@@ -19,8 +21,8 @@ inline TH2D* load2DHistogram(const std::string& filename,
 
     std::cout << "Retrieving histogram: " << histname << std::endl;
 
-    TH2* h2_base = dynamic_cast<TH2*>(f->Get(histname.c_str()));
-    if (!h2_base) {
+    TH2* h2 = dynamic_cast<TH2*>(f->Get(histname.c_str()));
+    if (!h2) {
         std::cerr << "ERROR: Histogram '" << histname
                   << "' not found in file " << filename << std::endl;
         f->Close();
@@ -28,19 +30,8 @@ inline TH2D* load2DHistogram(const std::string& filename,
         return nullptr;
     }
 
-    // We specifically want TH2D. If it's not, you can adapt this,
-    // but for now we enforce TH2D.
-    TH2D* h2 = dynamic_cast<TH2D*>(h2_base);
-    if (!h2) {
-        std::cerr << "ERROR: Histogram '" << histname
-                  << "' is not a TH2D (it might be TH2F, TH2I, ...)" << std::endl;
-        f->Close();
-        delete f;
-        return nullptr;
-    }
-
-    // Clone so we can safely close the file
-    TH2D* hClone = dynamic_cast<TH2D*>(h2->Clone());
+    // Clone
+    TH2* hClone = dynamic_cast<TH2*>(h2->Clone());
     hClone->SetDirectory(nullptr);
 
     f->Close();
@@ -49,10 +40,10 @@ inline TH2D* load2DHistogram(const std::string& filename,
     return hClone;
 }
 //now produca histrogam of cos theta * N vs x
-inline TH1D* cosThetaNvsX(TH2D* fakeMC, const std::string& hname)
+inline TH1D* cosThetaNvsX(TH2* fakeMC, const std::string& hname)
 {
     if (!fakeMC) {
-        std::cerr << "ERROR: buildCosThetaNvsX got null fakeMC\n";
+        std::cerr << "ERROR: CosThetaNvsX got null fakeMC\n";
         return nullptr;
     }
 
@@ -72,8 +63,7 @@ inline TH1D* cosThetaNvsX(TH2D* fakeMC, const std::string& hname)
         double sumCosN = 0.0;
 
         for (int iy = 1; iy <= thBins; ++iy) {
-            double thetaCenter = fakeMC->GetYaxis()->GetBinCenter(iy);
-            double cosTheta    = std::cos(thetaCenter);
+            double cosTheta = fakeMC->GetYaxis()->GetBinCenter(iy);
             double N           = fakeMC->GetBinContent(ix, iy);
 
             sumCosN += cosTheta * N;
@@ -86,7 +76,7 @@ inline TH1D* cosThetaNvsX(TH2D* fakeMC, const std::string& hname)
 
 }
 //compute costheta *N vs x over x vs N 
-inline TH1D*AvgcosthetavsX(TH2D* fakeMC, const std::string& baseName)
+inline TH1D*AvgcosthetavsX(TH2* fakeMC, const std::string& baseName)
 {
     if (!fakeMC) return nullptr; 
     //find what N vs x is 
@@ -124,7 +114,7 @@ inline TH1D* computeAvgCosThetaVsXFromFile(const std::string& filename,
                                            const std::string& histname,
                                            const std::string& tag)
 {
-    TH2D* h2 = load2DHistogram(filename, histname);
+    TH2* h2 = load2DHistogram(filename, histname);
     if (!h2) {
         std::cerr << "computeAvgCosThetaVsXFromFile: failed to load 2D histogram\n";
         return nullptr;
@@ -137,10 +127,9 @@ inline TH1D* computeAvgCosThetaVsXFromFile(const std::string& filename,
 
     TH1D* hAvgCos_vs_x = AvgcosthetavsX(h2, baseName);
 
-    // h2 was cloned from the file; we own it
     delete h2;
 
     return hAvgCos_vs_x;
 }
-
-#endif // COS_THETA_UTILS_H
+}
+#endif // end of the h file
