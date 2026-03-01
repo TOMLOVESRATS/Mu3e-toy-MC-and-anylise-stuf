@@ -169,7 +169,9 @@ __global__ void acceptanceKernel(uint64_t N,
         atomicAdd(&gen2D[idx], 1U);
 
         // use overlap length (short barrel)
-        const double zHeff = 0.5 * fmin(L1_mm, fmin(L2_mm, L3_mm));
+        const float zH1 = 0.5f * L1_mm_f;
+        const float zH2 = 0.5f * L2_mm_f;
+        const float zH3 = 0.5f * L3_mm_f;
 
         // z0 smearing
         double z0_mm = (2.0 * curand_uniform_double(&st) - 1.0) * Z0_HALF_RANGE_MM;
