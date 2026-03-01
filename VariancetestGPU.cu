@@ -302,13 +302,27 @@ __global__ void generate_histogram_chunk(
         if (r >= rate) continue;
 
         //==========================================
-        //the event by event generation of z0 and check rather if it is accepted event or not
+        //smear x first, then evaluate event-by-event acceptance
         //===========================================
-        const float zHeff = 0.5f * fminf(L1_mm_f, fminf(L2_mm_f, L3_mm_f));
+        float sigma = 0.0512f * randomX - 0.0039f;
+        if (sigma < 0.0f) sigma = 0.0f;
+
+        float xSmeared = randomX;
+        if (sigma > 0.0f) {
+            float2 n2 = curand_normal2(&local);
+            float trial = randomX + sigma * n2.x;
+            if (trial >= d_xMinPlot_f && trial < d_xMaxPlot_f) {
+                xSmeared = trial;
+            }
+        }
+
+        const float zH1 = 0.5f * L1_mm_f;
+        const float zH2 = 0.5f * L2_mm_f;
+        const float zH3 = 0.5f * L3_mm_f;
         //genrate random  z0
         const float z0_mm = (2.0f * u4.w - 1.0f) * Z0_HALF_RANGE_MM_f;
         //conver x back to p
-        const float E = randomX * (float)E_MAX;
+        const float E = xSmeared * (float)E_MAX;
         //cant be lower than the electron mass energy
         if (E <= M_E_MEV_f) continue;
         //get the momentum
@@ -323,36 +337,16 @@ __global__ void generate_histogram_chunk(
         const float pT = p * sinT;
         if (pT <= 1e-9f) continue;
         // outgoing hits at r1,r2,r3
-        const bool o1 = hit_at_radius_device(pT, pz, r1_mm_f, zHeff, z0_mm, false);
-        const bool o2 = hit_at_radius_device(pT, pz, r2_mm_f, zHeff, z0_mm, false);
-        const bool o3 = hit_at_radius_device(pT, pz, r3_mm_f, zHeff, z0_mm, false);
+        const bool o1 = hit_at_radius_device(pT, pz, r1_mm_f, zH1, z0_mm, false);
+        const bool o2 = hit_at_radius_device(pT, pz, r2_mm_f, zH2, z0_mm, false);
+        const bool o3 = hit_at_radius_device(pT, pz, r3_mm_f, zH3, z0_mm, false);
         //for recurl it has to at least hit 1 back
-        const bool r2 = hit_at_radius_device(pT, pz, r3_mm_f, zHeff, z0_mm, true);
+        const bool r2 = hit_at_radius_device(pT, pz, r3_mm_f, zH3, z0_mm, true);
         //if all three isnt achieved pass it 
 
         if (!(o1 && o2 && o3 && r2)) continue;
 
 
-        //=============================================================
-        //move gaussian random after it is accepted as acceptnace rate is pretty high
-        //retry x until it is in the range after smearing
-
-        float sigma = 0.0512f * randomX - 0.0039f;
-        if (sigma < 0.0f) sigma = 0.0f;
-
-        float xSmeared = randomX;
-
-        // smear
-        if (sigma > 0.0f) {
-            // curand_normal2 gives two Gaussian random numbers for smearing.
-            float2 n2 = curand_normal2(&local);
-            float trial = randomX + sigma * n2.x;
-
-            // if smearing pushes outside, revert
-            if (trial >= d_xMinPlot_f && trial < d_xMaxPlot_f) {
-                xSmeared = trial;
-            }
-        }
         // fill bins (smeared x, original cosTheta)
         const int fillBinX = valueToBin_f(xSmeared, d_xMinPlot_f, d_xMaxPlot_f, numberOfBinsX);
         const int fillBinY = valueToBin_f(randomCosTheta, d_cosThetaMin_f, d_cosThetaMax_f, numberOfBinsCosTheta);
