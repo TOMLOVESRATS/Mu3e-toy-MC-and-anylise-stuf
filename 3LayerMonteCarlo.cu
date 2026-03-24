@@ -364,7 +364,7 @@ __device__ __forceinline__ bool hit_at_radius_device_offset(
     float xc = x0_m + rho_m * (sinf(phi_p));
     float yc = y0_m + rho_m * (-cosf(phi_p));
 
-    // If center too close to origin, fall back to your old origin-based formula
+    // If center too close to origin, fall back old origin-based formula
     float D = sqrtf(xc*xc + yc*yc);
     if (D < 1e-9f) {
         return hit_at_radius_device(pT_MeV, pz_MeV, r_layer_mm, zHalf_mm, z0_mm, recurl);
