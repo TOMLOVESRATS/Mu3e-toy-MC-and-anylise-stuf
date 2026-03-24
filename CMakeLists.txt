@@ -50,7 +50,7 @@ set(ROOT_PLOT_LIBS
 )
 
 # ============================================================
-# CPU Executables
+# CPU Executables (from main branch)
 # ============================================================
 add_executable(theoryfit Theoryfit.cpp)
 
@@ -76,7 +76,7 @@ target_compile_features(reference_cos PRIVATE cxx_std_17)
 add_executable(MichelPolarization MichelPolarizationTheoryEventscopy.cpp)
 
 # ============================================================
-# GPU Executables (CUDA)
+# GPU Executables (CUDA - from GPU-coding branch)
 # ============================================================
 add_executable(MonteCarloMuonGPU MontecarloGPU.cu)
 set_target_properties(MonteCarloMuonGPU PROPERTIES
@@ -134,18 +134,6 @@ set_target_properties(VarianceTestGPU PROPERTIES
     CUDA_ARCHITECTURES 120
 )
 target_link_libraries(VarianceTestGPU PRIVATE
-    CUDA::cudart
-    CUDA::curand
-    ${ROOT_LIBRARIES}
-)
-
-add_executable(VarianceTestGPU_withBias variancetest_with_bias.cu)
-set_target_properties(VarianceTestGPU_withBias PROPERTIES
-    BUILD_RPATH "/usr/local/cuda/targets/x86_64-linux/lib"
-    INSTALL_RPATH "/usr/local/cuda/targets/x86_64-linux/lib"
-    CUDA_ARCHITECTURES 120
-)
-target_link_libraries(VarianceTestGPU_withBias PRIVATE
     CUDA::cudart
     CUDA::curand
     ${ROOT_LIBRARIES}
