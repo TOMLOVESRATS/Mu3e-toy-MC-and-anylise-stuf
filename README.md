@@ -344,11 +344,3 @@ Update these paths in CMakeLists.txt or set as environment variables:
 - Update `baseDir` paths in source files as needed
 
 ---
-
-## License
-
-[Add your license information here]
-
-## Contact
-
-[Add contact information]
